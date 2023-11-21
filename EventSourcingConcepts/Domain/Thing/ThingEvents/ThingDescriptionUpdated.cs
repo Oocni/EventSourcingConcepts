@@ -2,7 +2,7 @@ using EventSourcingConcepts.Domain.Common.Events;
 
 namespace EventSourcingConcepts.Domain.Thing.ThingEvents;
 
-public sealed record ThingDescriptionUpdated(int Id,
+public sealed record ThingDescriptionUpdated(int StreamId,
     string Description, 
     DateTime At):IEvent
 {

@@ -2,7 +2,7 @@ using EventSourcingConcepts.Domain.Common.Events;
 
 namespace EventSourcingConcepts.Domain.Thing.ThingEvents;
 
-public sealed record ThingRegistered(int Id,
+public sealed record ThingRegistered(int StreamId,
     string ContainerId,
     string ExternalId,
     string Description,

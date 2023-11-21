@@ -1,9 +1,23 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using EventSourcingConcepts.Domain.Common.Events;
+using EventSourcingConcepts.CQRS.Commands.RegisterThing;
+using EventSourcingConcepts.CQRS.Queries.GetThing;
 using EventSourcingConcepts.Domain.Thing;
 using EventSourcingConcepts.Domain.Thing.ThingEvents;
 using EventSourcingConcepts.EventStore;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+//Add dependency injection
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddSingleton<IEventStore, EventStore>();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterThingCommand>());
+
+using var host = builder.Build();
+using var serviceScope = host.Services.CreateScope();
+var serviceProvider = serviceScope.ServiceProvider;
+var mediator = serviceProvider.GetRequiredService<IMediator>();
 
 Console.WriteLine("Event Sourcing Concepts");
 Console.WriteLine("-----------------------");
@@ -34,8 +48,6 @@ return;
 
 void RegisterThing()
 {
-    Console.WriteLine("Enter the id");
-    var id = int.Parse(Console.ReadLine());
     Console.WriteLine("Enter the container id");
     var containerId = Console.ReadLine();
     Console.WriteLine("Enter the external id");
@@ -45,8 +57,8 @@ void RegisterThing()
     Console.WriteLine("Enter the event type");
     var eventType = (ThingType)Enum.Parse(typeof(ThingType), Console.ReadLine());
 
-    var thingRegistered = new ThingRegistered(id, containerId, externalId, description, eventType, DateTime.Now);
-    eventStore.AppendToStream(thingRegistered);
+    var command = new RegisterThingCommand(containerId, externalId, description, (int)eventType);
+    mediator.Send(command);
 }
 
 void UpdateThingDescription()
@@ -74,7 +86,8 @@ void GetThing()
     Console.WriteLine("Enter the id");
     var id =int.Parse(Console.ReadLine());
 
-    var thing = ConstructThing(id);
+    var query = new GetThingQuery(id);
+    var thing = mediator.Send(query).Result;
 
     Console.WriteLine($"Thing id: {@thing.Id}");
     Console.WriteLine($"Thing container id: {thing.ContainerId}");
@@ -94,7 +107,7 @@ Thing ConstructThing(int id)
         switch (@event)
         {
             case ThingRegistered thingRegistered:
-                thing.Id = thingRegistered.Id;
+                thing.Id = thingRegistered.StreamId;
                 thing.ContainerId = thingRegistered.ContainerId;
                 thing.ExternalId = thingRegistered.ExternalId;
                 thing.Description = thingRegistered.Description;

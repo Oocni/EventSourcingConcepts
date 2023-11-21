@@ -6,4 +6,5 @@ public interface IEventStore
 {
     void AppendToStream(IEvent @event);
     IEnumerable<IEvent> LoadEventStream(int streamId);
+    int GetNextStreamId();
 }
