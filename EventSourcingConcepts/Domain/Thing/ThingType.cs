@@ -1,4 +1,4 @@
-namespace EventSourcingConcepts.Domain.ThingHandling;
+namespace EventSourcingConcepts.Domain.Thing;
 
 public enum ThingType
 {

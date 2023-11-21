@@ -1,6 +1,6 @@
-namespace EventSourcingConcepts.Domain.ThingHandling;
+namespace EventSourcingConcepts.Domain.Thing;
 
-internal sealed class Thing
+public sealed class Thing
 {
     public int Id { get; set; }
     public string ContainerId { get; set; } = "";

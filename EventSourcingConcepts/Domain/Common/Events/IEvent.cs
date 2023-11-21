@@ -1,4 +1,4 @@
-namespace EventSourcingConcepts.Domain.ThingHandling.ThingEvents;
+namespace EventSourcingConcepts.Domain.Common.Events;
 
 public interface IEvent
 {

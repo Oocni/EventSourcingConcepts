@@ -1,12 +1,14 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using EventSourcingConcepts.Domain.ThingHandling;
-using EventSourcingConcepts.Domain.ThingHandling.ThingEvents;
+using EventSourcingConcepts.Domain.Common.Events;
+using EventSourcingConcepts.Domain.Thing;
+using EventSourcingConcepts.Domain.Thing.ThingEvents;
+using EventSourcingConcepts.EventStore;
 
 Console.WriteLine("Event Sourcing Concepts");
 Console.WriteLine("-----------------------");
 
-var eventsList = new List<IEvent>();
+var eventStore = new EventStore();
 var @continue = true;
 while (@continue)
 {
@@ -44,7 +46,7 @@ void RegisterThing()
     var eventType = (ThingType)Enum.Parse(typeof(ThingType), Console.ReadLine());
 
     var thingRegistered = new ThingRegistered(id, containerId, externalId, description, eventType, DateTime.Now);
-    eventsList.Add(thingRegistered);
+    eventStore.AppendToStream(thingRegistered);
 }
 
 void UpdateThingDescription()
@@ -55,7 +57,7 @@ void UpdateThingDescription()
     var description = Console.ReadLine();
 
     var thingDescriptionUpdated = new ThingDescriptionUpdated(id, description, DateTime.Now);
-    eventsList.Add(thingDescriptionUpdated);
+    eventStore.AppendToStream(thingDescriptionUpdated);
 }
 
 void DeleteThing()
@@ -64,7 +66,7 @@ void DeleteThing()
     var eventId = Console.ReadLine();
 
     var thingDeleted = new ThingDeleted(int.Parse(eventId), DateTime.Now);
-    eventsList.Add(thingDeleted);
+    eventStore.AppendToStream(thingDeleted);
 }
 
 void GetThing()
@@ -85,10 +87,7 @@ void GetThing()
 Thing ConstructThing(int id)
 {
     var thing = new Thing();
-    var events = eventsList.Where(e => e.Id == id)
-        .OrderBy(e => e.EventOrder)
-        .ThenBy(e => e.At)
-        .ToList();
+    var events = eventStore.LoadEventStream(id);
     
     foreach (var @event in events)
     {

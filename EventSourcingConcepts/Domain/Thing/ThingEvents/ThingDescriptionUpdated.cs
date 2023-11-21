@@ -1,4 +1,6 @@
-namespace EventSourcingConcepts.Domain.ThingHandling.ThingEvents;
+using EventSourcingConcepts.Domain.Common.Events;
+
+namespace EventSourcingConcepts.Domain.Thing.ThingEvents;
 
 public sealed record ThingDescriptionUpdated(int Id,
     string Description, 
