@@ -20,10 +20,16 @@ public class DeleteThingHandler : IRequestHandler<DeleteThingCommand>
     
     public Task Handle(DeleteThingCommand command, CancellationToken cancellationToken)
     {
+        var stream = _eventsStore.LoadEventStream(command.ThingId);
+        var deleteThingAggregate = DeleteThingAggregate.CreateDeleteThingAggregate(stream);
+        
+        if(deleteThingAggregate.State == ThingState.Deleted)
+            return Task.CompletedTask;
+        
         var thingDeleted = new ThingDeleted(command.ThingId, DateTime.UtcNow);
         _eventsStore.AppendToStream(thingDeleted);
         
-        var stream = _eventsStore.LoadEventStream(command.ThingId);
+        stream = _eventsStore.LoadEventStream(command.ThingId);
         var thingProjection = ThingProjection.CreateThing(stream);
         _projectionsStore.SaveProjection(thingProjection);
         

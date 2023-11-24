@@ -20,10 +20,16 @@ public class UpdateDescriptionThingHandler : IRequestHandler<UpdateDescriptionTh
     
     public Task Handle(UpdateDescriptionThingCommand command, CancellationToken cancellationToken)
     {
+        var stream = _eventsStore.LoadEventStream(command.ThingId);
+        var updateDescriptionThingAggregate = UpdateDescriptionThingAggregate.CreateUpdateDescriptionThingAggregate(stream);
+        
+        if(updateDescriptionThingAggregate.Description == command.NewDescription || updateDescriptionThingAggregate.State == ThingState.Deleted)
+            return Task.CompletedTask;
+        
         var thingDescriptionUpdated = new ThingDescriptionUpdated(command.ThingId, command.NewDescription, DateTime.UtcNow);
         _eventsStore.AppendToStream(thingDescriptionUpdated);
         
-        var stream = _eventsStore.LoadEventStream(command.ThingId);
+        stream = _eventsStore.LoadEventStream(command.ThingId);
         var thingProjection = ThingProjection.CreateThing(stream);
         _projectionsStore.SaveProjection(thingProjection);
         
