@@ -1,9 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using EventSourcingConcepts.CQRS.Commands.DeleteThing;
 using EventSourcingConcepts.CQRS.Commands.RegisterThing;
+using EventSourcingConcepts.CQRS.Commands.UpdateDescriptionThing;
 using EventSourcingConcepts.CQRS.Queries.GetThing;
 using EventSourcingConcepts.Domain.Thing;
-using EventSourcingConcepts.Domain.Thing.ThingEvents;
 using EventSourcingConcepts.EventStore;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,8 +69,8 @@ void UpdateThingDescription()
     Console.WriteLine("Enter the new description");
     var description = Console.ReadLine();
 
-    var thingDescriptionUpdated = new ThingDescriptionUpdated(id, description, DateTime.Now);
-    eventStore.AppendToStream(thingDescriptionUpdated);
+    var command = new UpdateDescriptionThingCommand(id, description);
+    mediator.Send(command);
 }
 
 void DeleteThing()
@@ -77,8 +78,8 @@ void DeleteThing()
     Console.WriteLine("Enter the id");
     var eventId = Console.ReadLine();
 
-    var thingDeleted = new ThingDeleted(int.Parse(eventId), DateTime.Now);
-    eventStore.AppendToStream(thingDeleted);
+    var command = new DeleteThingCommand(int.Parse(eventId));
+    mediator.Send(command);
 }
 
 void GetThing()
@@ -95,32 +96,4 @@ void GetThing()
     Console.WriteLine($"Thing description: {@thing.Description}");
     Console.WriteLine($"Thing type: {@thing.Type}");
     Console.WriteLine($"Thing state: {@thing.State}");
-}
-
-Thing ConstructThing(int id)
-{
-    var thing = new Thing();
-    var events = eventStore.LoadEventStream(id);
-    
-    foreach (var @event in events)
-    {
-        switch (@event)
-        {
-            case ThingRegistered thingRegistered:
-                thing.Id = thingRegistered.StreamId;
-                thing.ContainerId = thingRegistered.ContainerId;
-                thing.ExternalId = thingRegistered.ExternalId;
-                thing.Description = thingRegistered.Description;
-                thing.Type = thingRegistered.Type;
-                break;
-            case ThingDescriptionUpdated thingDescriptionUpdated:
-                thing.Description = thingDescriptionUpdated.Description;
-                break;
-            case ThingDeleted:
-                thing.State = ThingState.Deleted;
-                break;
-        }
-    }
-
-    return thing;
 }

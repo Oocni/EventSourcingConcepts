@@ -14,15 +14,15 @@ public class RegisterThingHandler : IRequestHandler<RegisterThingCommand>
         _eventStore = eventStore;
     }
     
-    public Task Handle(RegisterThingCommand request, CancellationToken cancellationToken)
+    public Task Handle(RegisterThingCommand command, CancellationToken cancellationToken)
     {
         var streamId = _eventStore.GetNextStreamId();
         var thingRegistered = new ThingRegistered(
             streamId,
-            request.ContainerId,
-            request.ExternalId,
-            request.Description,
-            (ThingType)request.Type,
+            command.ContainerId,
+            command.ExternalId,
+            command.Description,
+            (ThingType)command.Type,
             DateTime.UtcNow);
         _eventStore.AppendToStream(thingRegistered);
         return Task.CompletedTask;
