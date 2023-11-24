@@ -1,8 +1,8 @@
 using EventSourcingConcepts.Domain.Common.Events;
 
-namespace EventSourcingConcepts.EventStore;
+namespace EventSourcingConcepts.Stores.EventsStore;
 
-public interface IEventStore
+public interface IEventsStore
 {
     void AppendToStream(IEvent @event);
     IEnumerable<IEvent> LoadEventStream(int streamId);

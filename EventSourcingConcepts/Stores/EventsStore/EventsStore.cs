@@ -1,8 +1,8 @@
 using EventSourcingConcepts.Domain.Common.Events;
 
-namespace EventSourcingConcepts.EventStore;
+namespace EventSourcingConcepts.Stores.EventsStore;
 
-public class EventStore : IEventStore
+public class EventsStore : IEventsStore
 {
     private readonly IDictionary<int, IList<IEvent>> _streams = new Dictionary<int, IList<IEvent>>();
     

@@ -1,22 +1,32 @@
+using EventSourcingConcepts.Domain.Thing;
 using EventSourcingConcepts.Domain.Thing.ThingEvents;
-using EventSourcingConcepts.EventStore;
+using EventSourcingConcepts.Stores.EventsStore;
+using EventSourcingConcepts.Stores.ProjectionsStore;
 using MediatR;
 
 namespace EventSourcingConcepts.CQRS.Commands.DeleteThing;
 
 public class DeleteThingHandler : IRequestHandler<DeleteThingCommand>
 {
-    private readonly IEventStore _eventStore;
+    private readonly IEventsStore _eventsStore;
+    private readonly IProjectionsStore _projectionsStore;
 
-    public DeleteThingHandler(IEventStore eventStore)
+    public DeleteThingHandler(IEventsStore eventsStore,
+        IProjectionsStore projectionsStore)
     {
-        _eventStore = eventStore;
+        _eventsStore = eventsStore;
+        _projectionsStore = projectionsStore;
     }
     
     public Task Handle(DeleteThingCommand command, CancellationToken cancellationToken)
     {
         var thingDeleted = new ThingDeleted(command.ThingId, DateTime.UtcNow);
-        _eventStore.AppendToStream(thingDeleted);
+        _eventsStore.AppendToStream(thingDeleted);
+        
+        var stream = _eventsStore.LoadEventStream(command.ThingId);
+        var thingProjection = ThingProjection.CreateThing(stream);
+        _projectionsStore.SaveProjection(thingProjection);
+        
         return Task.CompletedTask;
     }
 }

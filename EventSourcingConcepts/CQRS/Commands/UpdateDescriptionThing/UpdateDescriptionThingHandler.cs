@@ -1,22 +1,32 @@
+using EventSourcingConcepts.Domain.Thing;
 using EventSourcingConcepts.Domain.Thing.ThingEvents;
-using EventSourcingConcepts.EventStore;
+using EventSourcingConcepts.Stores.EventsStore;
+using EventSourcingConcepts.Stores.ProjectionsStore;
 using MediatR;
 
 namespace EventSourcingConcepts.CQRS.Commands.UpdateDescriptionThing;
 
 public class UpdateDescriptionThingHandler : IRequestHandler<UpdateDescriptionThingCommand>
 {
-    private readonly IEventStore _eventStore;
+    private readonly IEventsStore _eventsStore;
+    private readonly IProjectionsStore _projectionsStore;
 
-    public UpdateDescriptionThingHandler(IEventStore eventStore)
+    public UpdateDescriptionThingHandler(IEventsStore eventsStore,
+        IProjectionsStore projectionsStore)
     {
-        _eventStore = eventStore;
+        _eventsStore = eventsStore;
+        _projectionsStore = projectionsStore;
     }
     
     public Task Handle(UpdateDescriptionThingCommand command, CancellationToken cancellationToken)
     {
         var thingDescriptionUpdated = new ThingDescriptionUpdated(command.ThingId, command.NewDescription, DateTime.UtcNow);
-        _eventStore.AppendToStream(thingDescriptionUpdated);
+        _eventsStore.AppendToStream(thingDescriptionUpdated);
+        
+        var stream = _eventsStore.LoadEventStream(command.ThingId);
+        var thingProjection = ThingProjection.CreateThing(stream);
+        _projectionsStore.SaveProjection(thingProjection);
+        
         return Task.CompletedTask;
     }
 }

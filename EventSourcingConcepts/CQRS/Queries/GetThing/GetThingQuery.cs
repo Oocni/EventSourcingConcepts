@@ -3,4 +3,4 @@ using MediatR;
 
 namespace EventSourcingConcepts.CQRS.Queries.GetThing;
 
-public sealed record GetThingQuery(int ThingId):IRequest<Thing>;
+public sealed record GetThingQuery(int ThingId):IRequest<ThingProjection?>;

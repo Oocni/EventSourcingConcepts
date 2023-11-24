@@ -1,22 +1,26 @@
 using EventSourcingConcepts.Domain.Thing;
 using EventSourcingConcepts.Domain.Thing.ThingEvents;
-using EventSourcingConcepts.EventStore;
+using EventSourcingConcepts.Stores.EventsStore;
+using EventSourcingConcepts.Stores.ProjectionsStore;
 using MediatR;
 
 namespace EventSourcingConcepts.CQRS.Commands.RegisterThing;
 
 public class RegisterThingHandler : IRequestHandler<RegisterThingCommand>
 {
-    private readonly IEventStore _eventStore;
+    private readonly IEventsStore _eventsStore;
+    private readonly IProjectionsStore _projectionsStore;
 
-    public RegisterThingHandler(IEventStore eventStore)
+    public RegisterThingHandler(IEventsStore eventsStore,
+        IProjectionsStore projectionsStore)
     {
-        _eventStore = eventStore;
+        _eventsStore = eventsStore;
+        _projectionsStore = projectionsStore;
     }
     
     public Task Handle(RegisterThingCommand command, CancellationToken cancellationToken)
     {
-        var streamId = _eventStore.GetNextStreamId();
+        var streamId = _eventsStore.GetNextStreamId();
         var thingRegistered = new ThingRegistered(
             streamId,
             command.ContainerId,
@@ -24,7 +28,12 @@ public class RegisterThingHandler : IRequestHandler<RegisterThingCommand>
             command.Description,
             (ThingType)command.Type,
             DateTime.UtcNow);
-        _eventStore.AppendToStream(thingRegistered);
+        _eventsStore.AppendToStream(thingRegistered);
+
+        var stream = _eventsStore.LoadEventStream(streamId);
+        var thingProjection = ThingProjection.CreateThing(stream);
+        _projectionsStore.SaveProjection(thingProjection);
+        
         return Task.CompletedTask;
     }
 }
