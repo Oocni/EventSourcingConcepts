@@ -6,7 +6,7 @@ using MediatR;
 
 namespace EventSourcingConcepts.CQRS.Commands.RegisterThing;
 
-public class RegisterThingHandler : IRequestHandler<RegisterThingCommand>
+public class RegisterThingHandler : IRequestHandler<RegisterThingCommand, int>
 {
     private readonly IEventsStore _eventsStore;
     private readonly IProjectionsStore _projectionsStore;
@@ -18,7 +18,7 @@ public class RegisterThingHandler : IRequestHandler<RegisterThingCommand>
         _projectionsStore = projectionsStore;
     }
     
-    public Task Handle(RegisterThingCommand command, CancellationToken cancellationToken)
+    public Task<int> Handle(RegisterThingCommand command, CancellationToken cancellationToken)
     {
         var streamId = _eventsStore.GetNextStreamId();
         var thingRegistered = new ThingRegistered(
@@ -30,10 +30,10 @@ public class RegisterThingHandler : IRequestHandler<RegisterThingCommand>
             DateTime.UtcNow);
         _eventsStore.AppendToStream(thingRegistered);
 
-        var stream = _eventsStore.LoadEventStream(streamId);
-        var thingProjection = ThingProjection.CreateThing(stream);
+        var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot(streamId);
+        var thingProjection = ThingProjection.CreateThing(stream, snapShot as ThingSnapShot);
         _projectionsStore.SaveProjection(thingProjection);
         
-        return Task.CompletedTask;
+        return Task.FromResult(streamId);
     }
 }

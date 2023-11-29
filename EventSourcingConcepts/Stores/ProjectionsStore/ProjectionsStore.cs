@@ -1,10 +1,11 @@
+using System.Collections.Concurrent;
 using EventSourcingConcepts.Domain.Common.Projections;
 
 namespace EventSourcingConcepts.Stores.ProjectionsStore;
 
 public class ProjectionsStore : IProjectionsStore
 {
-    private readonly IDictionary<int, IProjection> _projections = new Dictionary<int, IProjection>();
+    private readonly IDictionary<int, IProjection> _projections = new ConcurrentDictionary<int, IProjection>();
 
     public void SaveProjection(IProjection projection)
     {

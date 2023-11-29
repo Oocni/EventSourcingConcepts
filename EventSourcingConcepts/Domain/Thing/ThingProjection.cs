@@ -13,9 +13,9 @@ public sealed class ThingProjection : IProjection
     public ThingType Type { get; set; }
     public ThingState State { get; set; }
     
-    public static ThingProjection CreateThing(IEnumerable<IEvent> stream)
+    public static ThingProjection CreateThing(IEnumerable<IEvent> stream, ThingSnapShot? thingSnapShot)
     {
-        var thingProjection = new ThingProjection();
+        var thingProjection = thingSnapShot?.Projection as ThingProjection ?? new ThingProjection();
     
         foreach (var @event in stream)
         {

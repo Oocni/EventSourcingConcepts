@@ -8,9 +8,12 @@ public sealed class UpdateDescriptionThingAggregate
     public string Description { get; set; } = "";
     public ThingState State { get; set; }
     
-    public static UpdateDescriptionThingAggregate CreateUpdateDescriptionThingAggregate(IEnumerable<IEvent> stream)
+    public static UpdateDescriptionThingAggregate CreateUpdateDescriptionThingAggregate(IEnumerable<IEvent> stream, ThingSnapShot? thingSnapShot)
     {
-        var updateDescriptionThingAggregate = new UpdateDescriptionThingAggregate();
+        var updateDescriptionThingAggregate = thingSnapShot?.Projection is ThingProjection thingProjection
+            ? new UpdateDescriptionThingAggregate
+                { Description = thingProjection.Description, State = thingProjection.State }
+            : new UpdateDescriptionThingAggregate();
     
         foreach (var @event in stream)
         {

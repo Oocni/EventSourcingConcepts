@@ -4,7 +4,9 @@ using EventSourcingConcepts.CQRS.Commands.DeleteThing;
 using EventSourcingConcepts.CQRS.Commands.RegisterThing;
 using EventSourcingConcepts.CQRS.Commands.UpdateDescriptionThing;
 using EventSourcingConcepts.CQRS.Queries.GetThing;
+using EventSourcingConcepts.CQRS.Queries.GetThingEvents;
 using EventSourcingConcepts.Domain.Thing;
+using EventSourcingConcepts.Domain.Thing.ThingEvents;
 using EventSourcingConcepts.Stores.EventsStore;
 using EventSourcingConcepts.Stores.ProjectionsStore;
 using MediatR;
@@ -32,6 +34,8 @@ while (@continue)
     Console.WriteLine("- (u)pdate a thing (d)escription");
     Console.WriteLine("- (d)elete a thing");
     Console.WriteLine("- (g)et a thing");
+    Console.WriteLine("- (l)ist thing (e)vents");
+    Console.WriteLine("- (a)dd a thing with (m)ultiple (e)vents");
     Console.WriteLine("- (e)xit the program");
     var userInput = Console.ReadLine();
 
@@ -41,6 +45,8 @@ while (@continue)
         case "ud" : UpdateThingDescription(); break;
         case "d" : DeleteThing(); break;
         case "g" : GetThing(); break;
+        case "le": ListThingEvents(); break;
+        case "ame": AddThingWithMultipleEvents(); break;
         case "e" : @continue = false; break;
         default : Console.WriteLine("Invalid input"); break;
     }
@@ -60,7 +66,9 @@ void RegisterThing()
     var eventType = (ThingType)Enum.Parse(typeof(ThingType), Console.ReadLine());
 
     var command = new RegisterThingCommand(containerId, externalId, description, (int)eventType);
-    mediator.Send(command);
+    var id = mediator.Send(command).Result;
+    
+    Console.WriteLine($"Thing registered with id {id}");
 }
 
 void UpdateThingDescription()
@@ -103,4 +111,61 @@ void GetThing()
     Console.WriteLine($"Thing description: {thing.Description}");
     Console.WriteLine($"Thing type: {thing.Type}");
     Console.WriteLine($"Thing state: {thing.State}");
+}
+
+void ListThingEvents()
+{
+    Console.WriteLine("Enter the id");
+    var id =int.Parse(Console.ReadLine());
+
+    var query = new GetThingEventsQuery(id);
+    var events = mediator.Send(query).Result;
+
+    foreach (var @event in events)
+    {
+        switch (@event)
+        {
+            case ThingRegistered registered:
+            {
+                Console.WriteLine($"{registered!.At} - ThingRegistered({registered!.ContainerId} / {registered.ExternalId} / {registered.Description} / {registered.Type})");
+                break;
+            }
+            case ThingDescriptionUpdated updated:
+            {
+                Console.WriteLine($"{updated!.At} - ThingDescriptionUpdated({updated.Description})");
+                break;
+            }
+            case ThingDeleted deleted:
+            {
+                Console.WriteLine($"{deleted!.At} - ThingDeleted");
+                break;
+            }
+        }
+    }
+    
+}
+
+void AddThingWithMultipleEvents()
+{
+    Console.WriteLine("Enter the container id");
+    var containerId = Console.ReadLine();
+    Console.WriteLine("Enter the external id");
+    var externalId = Console.ReadLine();
+    Console.WriteLine("Enter the event type");
+    var eventType = (ThingType)Enum.Parse(typeof(ThingType), Console.ReadLine());
+    Console.WriteLine("Enter the description");
+    var description = Console.ReadLine();
+    Console.WriteLine("How many new description");
+    var nbDescriptionToUpdate = Console.ReadLine();
+
+    var command = new RegisterThingCommand(containerId, externalId, description, (int)eventType);
+    var id = mediator.Send(command).Result;
+
+    for (var i = 1; i <= int.Parse(nbDescriptionToUpdate); i++)
+    {
+        var updateCommand = new UpdateDescriptionThingCommand(id, $"{description}-{i}");
+        mediator.Send(updateCommand);
+    }
+    
+    Console.WriteLine($"Thing registered with id {id}");
 }

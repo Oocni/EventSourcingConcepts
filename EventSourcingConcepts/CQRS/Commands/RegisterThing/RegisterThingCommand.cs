@@ -6,4 +6,4 @@ public sealed record RegisterThingCommand(
     string ContainerId,
     string ExternalId,
     string Description,
-    int Type) : IRequest;
+    int Type) : IRequest<int>;

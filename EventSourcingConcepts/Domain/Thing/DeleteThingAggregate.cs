@@ -7,9 +7,12 @@ public sealed class DeleteThingAggregate
 {
     public ThingState State { get; set; }
     
-    public static DeleteThingAggregate CreateDeleteThingAggregate(IEnumerable<IEvent> stream)
+    public static DeleteThingAggregate CreateDeleteThingAggregate(IEnumerable<IEvent> stream, ThingSnapShot? thingSnapShot)
     {
-        var deleteThingAggregate = new DeleteThingAggregate();
+        var deleteThingAggregate = thingSnapShot?.Projection is ThingProjection thingProjection
+            ? new DeleteThingAggregate
+                { State = thingProjection.State }
+            : new DeleteThingAggregate();
     
         foreach (var @event in stream)
         {
