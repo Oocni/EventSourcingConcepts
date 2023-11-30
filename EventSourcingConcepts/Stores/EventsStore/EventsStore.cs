@@ -1,13 +1,19 @@
 using System.Collections.Concurrent;
-using EventSourcingConcepts.Domain.Common.Events;
-using EventSourcingConcepts.Domain.Thing;
+using EventSourcingConcepts.Stores.Abstraction.Events;
+using EventSourcingConcepts.Stores.Abstraction.Projections;
 
 namespace EventSourcingConcepts.Stores.EventsStore;
 
 public class EventsStore : IEventsStore
 {
+    private readonly IProjectionFactory _projectionFactory;
     private readonly IDictionary<int, IList<IEvent>> _streams = new ConcurrentDictionary<int, IList<IEvent>>();
-    private readonly IDictionary<int, ISnapShot> _snapShots = new ConcurrentDictionary<int, ISnapShot>();
+    private readonly IDictionary<int, ISnapShot<IProjection>> _snapShots = new ConcurrentDictionary<int, ISnapShot<IProjection>>();
+
+    public EventsStore(IProjectionFactory projectionFactory)
+    {
+        _projectionFactory = projectionFactory;
+    }
     
     public void AppendToStream(IEvent @event)
     {
@@ -26,32 +32,34 @@ public class EventsStore : IEventsStore
             .ToList();
     }
     
-    public (IEnumerable<IEvent>, ISnapShot?) LoadEventStreamFromSnapShot(int streamId)
+    public (IEnumerable<IEvent>, ISnapShot<TProjection>?) LoadEventStreamFromSnapShot<TProjection>(int streamId)
+        where TProjection : class, IProjection
     {
+        List<IEvent> stream;
         if(_snapShots.TryGetValue(streamId, out var snapShot))
         {
-            //TODO: Faire le snap shot au delà de 500 events ici aussi
-            var events = _streams[streamId]
+            stream = _streams[streamId]
                 .Where(e => e.At > snapShot.At)
                 .OrderBy(e => e.EventOrder)
                 .ThenBy(e => e.At)
                 .ToList();
-            return (events, snapShot);
         }
-        
-        var stream = _streams[streamId]
-            .OrderBy(e => e.EventOrder)
-            .ThenBy(e => e.At)
-            .ToList();
+        else
+        {
+            stream = _streams[streamId]
+                .OrderBy(e => e.EventOrder)
+                .ThenBy(e => e.At)
+                .ToList();
+        }
 
         if (stream.Count > 500)
         {
-            var thingSnapShot = new ThingSnapShot(streamId, stream.Last().At, ThingProjection.CreateThing(stream, null));
-            _snapShots[streamId] = thingSnapShot;
-            return (Array.Empty<IEvent>(), thingSnapShot);
+            snapShot = new SnapShot<TProjection>(streamId, stream.Last().At, _projectionFactory.CreateProjection<TProjection>(stream, snapShot?.Projection));
+            _snapShots[streamId] = snapShot;
+            return (Array.Empty<IEvent>(), (ISnapShot<TProjection>?)snapShot);
         }
-
-        return (stream, null);
+            
+        return (stream, (ISnapShot<TProjection>?)snapShot);
     }
 
     public int GetNextStreamId()

@@ -5,8 +5,10 @@ using EventSourcingConcepts.CQRS.Commands.RegisterThing;
 using EventSourcingConcepts.CQRS.Commands.UpdateDescriptionThing;
 using EventSourcingConcepts.CQRS.Queries.GetThing;
 using EventSourcingConcepts.CQRS.Queries.GetThingEvents;
+using EventSourcingConcepts.Domain;
 using EventSourcingConcepts.Domain.Thing;
 using EventSourcingConcepts.Domain.Thing.ThingEvents;
+using EventSourcingConcepts.Stores.Abstraction.Projections;
 using EventSourcingConcepts.Stores.EventsStore;
 using EventSourcingConcepts.Stores.ProjectionsStore;
 using MediatR;
@@ -17,6 +19,7 @@ using Microsoft.Extensions.Hosting;
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddSingleton<IEventsStore, EventsStore>();
 builder.Services.AddSingleton<IProjectionsStore, ProjectionsStore>();
+builder.Services.AddSingleton<IProjectionFactory, ProjectionFactory>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterThingCommand>());
 
 using var host = builder.Build();

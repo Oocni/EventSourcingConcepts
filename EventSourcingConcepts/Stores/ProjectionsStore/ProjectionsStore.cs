@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using EventSourcingConcepts.Domain.Common.Projections;
+using EventSourcingConcepts.Stores.Abstraction.Projections;
 
 namespace EventSourcingConcepts.Stores.ProjectionsStore;
 

@@ -30,8 +30,8 @@ public class RegisterThingHandler : IRequestHandler<RegisterThingCommand, int>
             DateTime.UtcNow);
         _eventsStore.AppendToStream(thingRegistered);
 
-        var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot(streamId);
-        var thingProjection = ThingProjection.CreateThing(stream, snapShot as ThingSnapShot);
+        var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(streamId);
+        var thingProjection = new ThingProjection(stream, snapShot?.Projection);
         _projectionsStore.SaveProjection(thingProjection);
         
         return Task.FromResult(streamId);

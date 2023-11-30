@@ -20,8 +20,8 @@ public class UpdateDescriptionThingHandler : IRequestHandler<UpdateDescriptionTh
     
     public Task Handle(UpdateDescriptionThingCommand command, CancellationToken cancellationToken)
     {
-        var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot(command.ThingId);
-        var updateDescriptionThingAggregate = UpdateDescriptionThingAggregate.CreateUpdateDescriptionThingAggregate(stream, snapShot as ThingSnapShot);
+        var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(command.ThingId);
+        var updateDescriptionThingAggregate = UpdateDescriptionThingAggregate.CreateUpdateDescriptionThingAggregate(stream, (ThingProjection?)snapShot?.Projection);
         
         if(updateDescriptionThingAggregate.Description == command.NewDescription || updateDescriptionThingAggregate.State == ThingState.Deleted)
             return Task.CompletedTask;
@@ -29,8 +29,8 @@ public class UpdateDescriptionThingHandler : IRequestHandler<UpdateDescriptionTh
         var thingDescriptionUpdated = new ThingDescriptionUpdated(command.ThingId, command.NewDescription, DateTime.UtcNow);
         _eventsStore.AppendToStream(thingDescriptionUpdated);
         
-        (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot(command.ThingId);
-        var thingProjection = ThingProjection.CreateThing(stream, snapShot as ThingSnapShot);
+        (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(command.ThingId);
+        var thingProjection = new ThingProjection(stream, snapShot?.Projection);
         _projectionsStore.SaveProjection(thingProjection);
         
         return Task.CompletedTask;

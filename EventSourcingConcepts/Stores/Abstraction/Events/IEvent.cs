@@ -1,4 +1,4 @@
-namespace EventSourcingConcepts.Domain.Common.Events;
+namespace EventSourcingConcepts.Stores.Abstraction.Events;
 
 public interface IEvent
 {

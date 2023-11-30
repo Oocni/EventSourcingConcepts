@@ -1,4 +1,4 @@
-using EventSourcingConcepts.Domain.Common.Events;
+using EventSourcingConcepts.Stores.Abstraction.Events;
 using MediatR;
 
 namespace EventSourcingConcepts.CQRS.Queries.GetThingEvents;

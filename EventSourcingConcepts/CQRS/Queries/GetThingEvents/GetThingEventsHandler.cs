@@ -1,4 +1,4 @@
-using EventSourcingConcepts.Domain.Common.Events;
+using EventSourcingConcepts.Stores.Abstraction.Events;
 using EventSourcingConcepts.Stores.EventsStore;
 using MediatR;
 

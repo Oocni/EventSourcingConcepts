@@ -20,8 +20,8 @@ public class DeleteThingHandler : IRequestHandler<DeleteThingCommand>
     
     public Task Handle(DeleteThingCommand command, CancellationToken cancellationToken)
     {
-        var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot(command.ThingId);
-        var deleteThingAggregate = DeleteThingAggregate.CreateDeleteThingAggregate(stream, snapShot as ThingSnapShot);
+        var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(command.ThingId);
+        var deleteThingAggregate = DeleteThingAggregate.CreateDeleteThingAggregate(stream, (ThingProjection?)snapShot?.Projection);
         
         if(deleteThingAggregate.State == ThingState.Deleted)
             return Task.CompletedTask;
@@ -29,8 +29,8 @@ public class DeleteThingHandler : IRequestHandler<DeleteThingCommand>
         var thingDeleted = new ThingDeleted(command.ThingId, DateTime.UtcNow);
         _eventsStore.AppendToStream(thingDeleted);
         
-        (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot(command.ThingId);
-        var thingProjection = ThingProjection.CreateThing(stream, snapShot as ThingSnapShot);
+        (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(command.ThingId);
+        var thingProjection = new ThingProjection(stream, snapShot?.Projection);
         _projectionsStore.SaveProjection(thingProjection);
         
         return Task.CompletedTask;

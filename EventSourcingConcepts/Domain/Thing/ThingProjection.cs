@@ -1,6 +1,6 @@
-using EventSourcingConcepts.Domain.Common.Events;
-using EventSourcingConcepts.Domain.Common.Projections;
 using EventSourcingConcepts.Domain.Thing.ThingEvents;
+using EventSourcingConcepts.Stores.Abstraction.Events;
+using EventSourcingConcepts.Stores.Abstraction.Projections;
 
 namespace EventSourcingConcepts.Domain.Thing;
 
@@ -13,30 +13,36 @@ public sealed class ThingProjection : IProjection
     public ThingType Type { get; set; }
     public ThingState State { get; set; }
     
-    public static ThingProjection CreateThing(IEnumerable<IEvent> stream, ThingSnapShot? thingSnapShot)
+    public ThingProjection(IEnumerable<IEvent> stream, IProjection? projection)
     {
-        var thingProjection = thingSnapShot?.Projection as ThingProjection ?? new ThingProjection();
+        if (projection is ThingProjection thingProjection)
+        {
+            Id = projection.Id;
+            ContainerId = thingProjection.ContainerId;
+            ExternalId = thingProjection.ExternalId;
+            Description = thingProjection.Description;
+            Type = thingProjection.Type;
+            State = thingProjection.State;
+        }
     
         foreach (var @event in stream)
         {
             switch (@event)
             {
                 case ThingRegistered thingRegistered:
-                    thingProjection.Id = thingRegistered.StreamId;
-                    thingProjection.ContainerId = thingRegistered.ContainerId;
-                    thingProjection.ExternalId = thingRegistered.ExternalId;
-                    thingProjection.Description = thingRegistered.Description;
-                    thingProjection.Type = thingRegistered.Type;
+                    Id = thingRegistered.StreamId;
+                    ContainerId = thingRegistered.ContainerId;
+                    ExternalId = thingRegistered.ExternalId;
+                    Description = thingRegistered.Description;
+                    Type = thingRegistered.Type;
                     break;
                 case ThingDescriptionUpdated thingDescriptionUpdated:
-                    thingProjection.Description = thingDescriptionUpdated.Description;
+                    Description = thingDescriptionUpdated.Description;
                     break;
                 case ThingDeleted:
-                    thingProjection.State = ThingState.Deleted;
+                    State = ThingState.Deleted;
                     break;
             }
         }
-
-        return thingProjection;
     }
 }

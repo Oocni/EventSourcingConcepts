@@ -1,5 +1,6 @@
-using EventSourcingConcepts.Domain.Common.Events;
 using EventSourcingConcepts.Domain.Thing.ThingEvents;
+using EventSourcingConcepts.Stores.Abstraction.Events;
+using EventSourcingConcepts.Stores.EventsStore;
 
 namespace EventSourcingConcepts.Domain.Thing;
 
@@ -7,9 +8,9 @@ public sealed class DeleteThingAggregate
 {
     public ThingState State { get; set; }
     
-    public static DeleteThingAggregate CreateDeleteThingAggregate(IEnumerable<IEvent> stream, ThingSnapShot? thingSnapShot)
+    public static DeleteThingAggregate CreateDeleteThingAggregate(IEnumerable<IEvent> stream, ThingProjection? thingProjection)
     {
-        var deleteThingAggregate = thingSnapShot?.Projection is ThingProjection thingProjection
+        var deleteThingAggregate = thingProjection != null
             ? new DeleteThingAggregate
                 { State = thingProjection.State }
             : new DeleteThingAggregate();

@@ -1,4 +1,4 @@
-using EventSourcingConcepts.Domain.Common.Events;
+using EventSourcingConcepts.Stores.Abstraction.Events;
 
 namespace EventSourcingConcepts.Domain.Thing.ThingEvents;
 
