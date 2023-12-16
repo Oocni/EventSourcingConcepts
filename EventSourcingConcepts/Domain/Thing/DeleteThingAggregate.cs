@@ -1,30 +1,48 @@
+using EventSourcingConcepts.Domain.Abstraction;
 using EventSourcingConcepts.Domain.Thing.ThingEvents;
 using EventSourcingConcepts.Stores.Abstraction.Events;
-using EventSourcingConcepts.Stores.EventsStore;
 
 namespace EventSourcingConcepts.Domain.Thing;
 
-public sealed class DeleteThingAggregate
+/// <summary>
+/// Aggregate that will manage the deletion of a thing
+/// </summary>
+public sealed class DeleteThingAggregate : IAggregate
 {
-    public ThingState State { get; set; }
-    
-    public static DeleteThingAggregate CreateDeleteThingAggregate(IEnumerable<IEvent> stream, ThingProjection? thingProjection)
+    private readonly ICollection<IEvent> _uncommittedEvents = new List<IEvent>();
+    private readonly int _id;
+    private readonly ThingState _state;
+
+    public DeleteThingAggregate(IReadOnlyCollection<IEvent> stream, ThingProjection? thingProjection)
     {
-        var deleteThingAggregate = thingProjection != null
-            ? new DeleteThingAggregate
-                { State = thingProjection.State }
-            : new DeleteThingAggregate();
+        _id = thingProjection?.Id ?? stream.First().StreamId;
+        _state = thingProjection != null
+            ? _state = thingProjection.State
+            : ThingState.Active;
     
         foreach (var @event in stream)
         {
-            switch (@event)
+            _state = @event switch
             {
-                case ThingDeleted:
-                    deleteThingAggregate.State = ThingState.Deleted;
-                    break;
-            }
+                ThingDeleted => ThingState.Deleted,
+                _ => _state
+            };
         }
+    }
 
-        return deleteThingAggregate;
+    public bool CanExecute()
+    {
+        return _state == ThingState.Active;
+    }
+
+    public void Execute()
+    {
+        var thingDeleted = new ThingDeleted(_id, DateTime.UtcNow);
+        _uncommittedEvents.Add(thingDeleted);
+    }
+    
+    public IReadOnlyCollection<IEvent> GetUncommittedEvents()
+    {
+        return (IReadOnlyCollection<IEvent>)_uncommittedEvents;
     }
 }

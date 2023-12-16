@@ -6,13 +6,13 @@ namespace EventSourcingConcepts.Domain.Thing;
 
 public sealed class ThingProjection : IProjection
 {
-    public int Id { get; set; }
-    public string ContainerId { get; set; } = "";
-    public string ExternalId { get; set; } = "";
-    public string Description { get; set; } = "";
-    public ThingType Type { get; set; }
-    public ThingState State { get; set; }
-    
+    public int Id { get; }
+    public string ContainerId { get; } = "";
+    public string ExternalId { get; } = "";
+    public string Description { get; } = "";
+    public ThingType Type { get; }
+    public ThingState State { get; }
+
     public ThingProjection(IEnumerable<IEvent> stream, IProjection? projection)
     {
         if (projection is ThingProjection thingProjection)
@@ -24,7 +24,7 @@ public sealed class ThingProjection : IProjection
             Type = thingProjection.Type;
             State = thingProjection.State;
         }
-    
+
         foreach (var @event in stream)
         {
             switch (@event)

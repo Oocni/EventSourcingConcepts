@@ -17,11 +17,13 @@ public class EventsStore : IEventsStore
     
     public void AppendToStream(IEvent @event)
     {
-        if (!_streams.ContainsKey(@event.StreamId))
+        if (!_streams.TryGetValue(@event.StreamId, out var value))
         {
-            _streams.Add(@event.StreamId, new List<IEvent>());
+            value = new List<IEvent>();
+            _streams.Add(@event.StreamId, value);
         }
-        _streams[@event.StreamId].Add(@event);
+
+        value.Add(@event);
     }
 
     public IEnumerable<IEvent> LoadEventStream(int streamId)
@@ -52,14 +54,14 @@ public class EventsStore : IEventsStore
                 .ToList();
         }
 
-        if (stream.Count > 500)
+        if (stream.Count <= 500)
         {
-            snapShot = new SnapShot<TProjection>(streamId, stream.Last().At, _projectionFactory.CreateProjection<TProjection>(stream, snapShot?.Projection));
-            _snapShots[streamId] = snapShot;
-            return (Array.Empty<IEvent>(), (ISnapShot<TProjection>?)snapShot);
+            return (stream, (ISnapShot<TProjection>?)snapShot);
         }
-            
-        return (stream, (ISnapShot<TProjection>?)snapShot);
+
+        snapShot = new SnapShot<TProjection>(streamId, stream.Last().At, _projectionFactory.CreateProjection<TProjection>(stream, snapShot?.Projection));
+        _snapShots[streamId] = snapShot;
+        return (Array.Empty<IEvent>(), (ISnapShot<TProjection>?)snapShot);
     }
 
     public int GetNextStreamId()

@@ -1,5 +1,5 @@
 using EventSourcingConcepts.Domain.Thing;
-using EventSourcingConcepts.Domain.Thing.ThingEvents;
+using EventSourcingConcepts.Stores.Abstraction.Events;
 using EventSourcingConcepts.Stores.EventsStore;
 using EventSourcingConcepts.Stores.ProjectionsStore;
 using MediatR;
@@ -21,13 +21,21 @@ public class UpdateDescriptionThingHandler : IRequestHandler<UpdateDescriptionTh
     public Task Handle(UpdateDescriptionThingCommand command, CancellationToken cancellationToken)
     {
         var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(command.ThingId);
-        var updateDescriptionThingAggregate = UpdateDescriptionThingAggregate.CreateUpdateDescriptionThingAggregate(stream, (ThingProjection?)snapShot?.Projection);
+        var updateDescriptionThingAggregate = new UpdateDescriptionThingAggregate((IReadOnlyCollection<IEvent>)stream, (ThingProjection?)snapShot?.Projection);
         
-        if(updateDescriptionThingAggregate.Description == command.NewDescription || updateDescriptionThingAggregate.State == ThingState.Deleted)
+        if(!updateDescriptionThingAggregate.CanExecute(command.NewDescription))
             return Task.CompletedTask;
         
-        var thingDescriptionUpdated = new ThingDescriptionUpdated(command.ThingId, command.NewDescription, DateTime.UtcNow);
-        _eventsStore.AppendToStream(thingDescriptionUpdated);
+        updateDescriptionThingAggregate.Execute(command.NewDescription);
+        var uncommittedEvents = updateDescriptionThingAggregate.GetUncommittedEvents();
+        
+        if(!uncommittedEvents.Any())
+            return Task.CompletedTask;
+        
+        foreach (var uncommittedEvent in uncommittedEvents)
+        {
+            _eventsStore.AppendToStream(uncommittedEvent);    
+        }
         
         (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(command.ThingId);
         var thingProjection = new ThingProjection(stream, snapShot?.Projection);

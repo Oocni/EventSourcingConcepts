@@ -1,5 +1,5 @@
 using EventSourcingConcepts.Domain.Thing;
-using EventSourcingConcepts.Domain.Thing.ThingEvents;
+using EventSourcingConcepts.Stores.Abstraction.Events;
 using EventSourcingConcepts.Stores.EventsStore;
 using EventSourcingConcepts.Stores.ProjectionsStore;
 using MediatR;
@@ -21,13 +21,21 @@ public class DeleteThingHandler : IRequestHandler<DeleteThingCommand>
     public Task Handle(DeleteThingCommand command, CancellationToken cancellationToken)
     {
         var (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(command.ThingId);
-        var deleteThingAggregate = DeleteThingAggregate.CreateDeleteThingAggregate(stream, (ThingProjection?)snapShot?.Projection);
+        var deleteThingAggregate = new DeleteThingAggregate((IReadOnlyCollection<IEvent>)stream, (ThingProjection?)snapShot?.Projection);
         
-        if(deleteThingAggregate.State == ThingState.Deleted)
+        if(!deleteThingAggregate.CanExecute())
             return Task.CompletedTask;
         
-        var thingDeleted = new ThingDeleted(command.ThingId, DateTime.UtcNow);
-        _eventsStore.AppendToStream(thingDeleted);
+        deleteThingAggregate.Execute();
+        var uncommittedEvents = deleteThingAggregate.GetUncommittedEvents();
+
+        if(!uncommittedEvents.Any())
+            return Task.CompletedTask;
+            
+        foreach (var uncommittedEvent in uncommittedEvents)
+        {
+            _eventsStore.AppendToStream(uncommittedEvent);    
+        }
         
         (stream, snapShot) = _eventsStore.LoadEventStreamFromSnapShot<ThingProjection>(command.ThingId);
         var thingProjection = new ThingProjection(stream, snapShot?.Projection);

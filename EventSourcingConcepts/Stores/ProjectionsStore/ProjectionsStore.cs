@@ -15,8 +15,8 @@ public class ProjectionsStore : IProjectionsStore
     public T? GetProjection<T>(int projectionId)
         where T : class, IProjection
     {
-        if(!_projections.ContainsKey(projectionId))
+        if(!_projections.TryGetValue(projectionId, out var value))
             return null;
-        return _projections[projectionId] as T;
+        return value as T;
     }
 }
